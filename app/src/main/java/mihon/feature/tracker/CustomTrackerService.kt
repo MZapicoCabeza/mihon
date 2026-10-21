@@ -167,7 +167,8 @@ object CustomTrackerService {
         }
     }
 
-    private synchronized fun enqueueOfflineEvent(context: Context, json: String) {
+    @Synchronized
+    private fun enqueueOfflineEvent(context: Context, json: String) {
         try {
             val queueFile = File(context.filesDir, QUEUE_FILENAME)
             val currentList = if (queueFile.exists()) {
@@ -201,7 +202,8 @@ object CustomTrackerService {
         }
     }
 
-    private synchronized fun flushOfflineQueue(context: Context, url: String, apiKey: String) {
+    @Synchronized
+    private fun flushOfflineQueue(context: Context, url: String, apiKey: String) {
         val queueFile = File(context.filesDir, QUEUE_FILENAME)
         if (!queueFile.exists()) return
 
