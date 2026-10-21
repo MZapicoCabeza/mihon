@@ -49,10 +49,10 @@ object CustomTrackerService {
 
     /**
      * Target endpoint URL for the reading tracker backend.
-     * Default points to local emulator host (10.0.2.2:3000/api/track) or custom host.
+     * Deployed 24/7 on Render cloud platform.
      */
     @Volatile
-    var trackerEndpointUrl: String = "http://10.0.2.2:3000/api/track"
+    var trackerEndpointUrl: String = "https://mihon-tracker.onrender.com/api/track"
 
     @Volatile
     var isEnabled: Boolean = true
