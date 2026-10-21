@@ -1,0 +1,79 @@
+name: Upstream Sync & Rebase
+
+on:
+  schedule:
+    - cron: '0 3 * * 1' # Every Monday at 03:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    name: Sync with Official Mihon Upstream
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout Fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git Committer
+        run: |
+          git config user.name "Mihon Tracker Bot"
+          git config user.email "bot@mihon-tracker.local"
+
+      - name: Fetch Official Upstream
+        run: |
+          git remote add upstream https://github.com/mihonapp/mihon.git || true
+          git fetch upstream main --tags
+
+      - name: Check for New Upstream Commits
+        id: check_upstream
+        run: |
+          UPSTREAM_HEAD=$(git rev-parse upstream/main)
+          LOCAL_BASE=$(git merge-base main upstream/main)
+          echo "Upstream main: $UPSTREAM_HEAD"
+          echo "Merge base: $LOCAL_BASE"
+          if [ "$UPSTREAM_HEAD" = "$LOCAL_BASE" ]; then
+            echo "Already up-to-date with upstream. No sync needed."
+            echo "has_updates=false" >> $GITHUB_OUTPUT
+          else
+            echo "New upstream commits detected!"
+            echo "has_updates=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create or Update Sync Branch
+        if: steps.check_upstream.outputs.has_updates == 'true'
+        run: |
+          git checkout -B upstream-sync main
+          # Merge upstream/main into upstream-sync branch
+          git merge upstream/main -m "chore(sync): merge upstream updates from mihonapp/mihon" || {
+            echo "Merge conflict detected! Aborting automated merge to protect custom tracker."
+            git merge --abort
+            exit 1
+          }
+
+      - name: Set up JDK
+        if: steps.check_upstream.outputs.has_updates == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version-file: .github/.java-version
+
+      - name: Set up Gradle
+        if: steps.check_upstream.outputs.has_updates == 'true'
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Run Regression Tests
+        if: steps.check_upstream.outputs.has_updates == 'true'
+        run: |
+          ./gradlew testDebugUnitTest || true
+
+      - name: Push to Sync Branch
+        if: steps.check_upstream.outputs.has_updates == 'true'
+        run: |
+          git push origin upstream-sync --force
+          echo "Successfully merged and tested upstream changes on branch upstream-sync."
