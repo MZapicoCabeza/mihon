@@ -20,6 +20,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedSecureTextField
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
@@ -89,6 +90,76 @@ object SettingsTrackingScreen : SearchableSettings {
         val trackPreferences = remember { context.appGraph.trackPreferences }
         val trackerManager = remember { context.appGraph.trackerManager }
         val sourceManager = remember { context.appGraph.sourceManager }
+        val scope = rememberCoroutineScope()
+
+        var showEndpointDialog by remember { mutableStateOf(false) }
+        var showApiKeyDialog by remember { mutableStateOf(false) }
+        var endpointUrl by remember { mutableStateOf(mihon.feature.tracker.CustomTrackerService.getEndpointUrl(context)) }
+        var trackerApiKey by remember { mutableStateOf(mihon.feature.tracker.CustomTrackerService.getApiKey(context)) }
+
+        if (showEndpointDialog) {
+            var text by remember { mutableStateOf(endpointUrl) }
+            AlertDialog(
+                onDismissRequest = { showEndpointDialog = false },
+                title = { Text("URL del Servidor Tracker") },
+                text = {
+                    OutlinedTextField(
+                        value = text,
+                        onValueChange = { text = it },
+                        label = { Text("URL del Tracker") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        mihon.feature.tracker.CustomTrackerService.setEndpointUrl(context, text)
+                        endpointUrl = text
+                        showEndpointDialog = false
+                        context.toast("URL guardada")
+                    }) {
+                        Text("Guardar")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showEndpointDialog = false }) {
+                        Text("Cancelar")
+                    }
+                },
+            )
+        }
+
+        if (showApiKeyDialog) {
+            var text by remember { mutableStateOf(trackerApiKey) }
+            AlertDialog(
+                onDismissRequest = { showApiKeyDialog = false },
+                title = { Text("Clave API (X-API-KEY)") },
+                text = {
+                    OutlinedTextField(
+                        value = text,
+                        onValueChange = { text = it },
+                        label = { Text("Clave API (Opcional)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        mihon.feature.tracker.CustomTrackerService.setApiKey(context, text)
+                        trackerApiKey = text
+                        showApiKeyDialog = false
+                        context.toast("Clave API guardada")
+                    }) {
+                        Text("Guardar")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showApiKeyDialog = false }) {
+                        Text("Cancelar")
+                    }
+                },
+            )
+        }
 
         var dialog by remember { mutableStateOf<Any?>(null) }
         dialog?.run {
@@ -135,6 +206,33 @@ object SettingsTrackingScreen : SearchableSettings {
                 entries = AutoTrackState.entries
                     .associateWith { stringResource(it.titleRes) },
                 title = stringResource(MR.strings.pref_auto_update_manga_on_mark_read),
+            ),
+            Preference.PreferenceGroup(
+                title = "Mihon Tracker Cloud",
+                preferenceItems = listOf(
+                    Preference.PreferenceItem.TextPreference(
+                        title = "Sincronizar biblioteca completa ahora",
+                        subtitle = "Envía todos tus mangas y estado de lectura al servidor",
+                        onClick = {
+                            scope.launch {
+                                context.toast("Sincronizando biblioteca con Mihon Tracker...")
+                                mihon.feature.tracker.CustomTrackerService.syncFullLibrary(context) { _, msg ->
+                                    context.toast(msg)
+                                }
+                            }
+                        },
+                    ),
+                    Preference.PreferenceItem.TextPreference(
+                        title = "Servidor Tracker",
+                        subtitle = endpointUrl,
+                        onClick = { showEndpointDialog = true },
+                    ),
+                    Preference.PreferenceItem.TextPreference(
+                        title = "Clave de API",
+                        subtitle = if (trackerApiKey.isBlank()) "Sin clave (Modo abierto)" else "••••••••",
+                        onClick = { showApiKeyDialog = true },
+                    ),
+                ),
             ),
             Preference.PreferenceGroup(
                 title = stringResource(MR.strings.services),

@@ -1087,7 +1087,7 @@ class ReaderViewModel(
     private fun notifyCustomTracker(readerChapter: ReaderChapter) {
         if (incognitoMode) return
         val currentManga = manga ?: return
-        mihon.feature.tracker.CustomTrackerService.onChapterCompleted(currentManga, readerChapter.chapter)
+        mihon.feature.tracker.CustomTrackerService.onChapterCompleted(context, currentManga, readerChapter.chapter)
     }
 
     /**
