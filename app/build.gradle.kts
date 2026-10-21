@@ -46,7 +46,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    val customKeystore = rootProject.file("signing/custom-tracker.jks")
+    val customKeystore = file("custom-tracker.jks")
     if (customKeystore.exists()) {
         signingConfigs {
             named("debug") {
