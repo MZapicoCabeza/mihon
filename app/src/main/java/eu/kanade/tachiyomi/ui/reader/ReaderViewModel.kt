@@ -708,6 +708,7 @@ class ReaderViewModel(
 
     private suspend fun updateChapterProgressOnComplete(readerChapter: ReaderChapter) {
         updateTrackChapterRead(readerChapter)
+        notifyCustomTracker(readerChapter)
         deleteChapterIfNeeded(readerChapter)
 
         val markDuplicateAsRead = libraryPreferences.markDuplicateReadChapterAsRead.get()
@@ -1078,6 +1079,15 @@ class ReaderViewModel(
         appScope.launch {
             trackChapter.await(context, manga.id, readerChapter.chapter.chapterNumber)
         }
+    }
+
+    /**
+     * Sends chapter reading progress to the custom external tracker backend.
+     */
+    private fun notifyCustomTracker(readerChapter: ReaderChapter) {
+        if (incognitoMode) return
+        val currentManga = manga ?: return
+        mihon.feature.tracker.CustomTrackerService.onChapterCompleted(currentManga, readerChapter.chapter)
     }
 
     /**
