@@ -35,7 +35,7 @@ android {
     namespace = "eu.kanade.tachiyomi"
 
     defaultConfig {
-        applicationId = "app.mihon"
+        applicationId = "app.mihon.sync"
 
         versionCode = 38
         versionName = "0.21.2"
@@ -46,7 +46,17 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    if (System.getenv("MIHON_GITHUB_RELEASE").toBoolean()) {
+    val customKeystore = rootProject.file("signing/custom-tracker.jks")
+    if (customKeystore.exists()) {
+        signingConfigs {
+            named("debug") {
+                storeFile = customKeystore
+                storePassword = "mihontrackerpass"
+                keyAlias = "customtracker"
+                keyPassword = "mihontrackerpass"
+            }
+        }
+    } else if (System.getenv("MIHON_GITHUB_RELEASE").toBoolean()) {
         signingConfigs {
             named("debug") {
                 storeFile = file(System.getenv("storeFile"))
